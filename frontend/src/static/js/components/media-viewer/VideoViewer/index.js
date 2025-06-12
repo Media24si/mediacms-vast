@@ -552,6 +552,7 @@ export default class VideoViewer extends React.PureComponent {
                     hasNextLink={!!nextLink}
                     hasPreviousLink={!!previousLink}
                     errorMessage={MediaPageStore.get('media-load-error-message')}
+                    vastUrl={this.props.data.vast_url}
                     onClickNextCallback={this.onClickNext}
                     onClickPreviousCallback={this.onClickPrevious}
                     onStateUpdateCallback={this.onStateUpdate}
@@ -590,7 +591,7 @@ function findGetParameter(parameterName) {
 }
 
  function handleCanvas(videoElem) { // Make sure it's a video element
-  
+
   if (!videoElem || !videoElem.tagName || videoElem.tagName.toLowerCase() !== 'video') {
     console.error('Invalid video element:', videoElem);
     return;
@@ -607,7 +608,7 @@ function findGetParameter(parameterName) {
     if (muted == 1) {
       Player.muted(true);
     }
-    
+
     if (timestamp >= 0 && timestamp < Player.duration()) {
       // Start the video from the given time
       Player.currentTime(timestamp);

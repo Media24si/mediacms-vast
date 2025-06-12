@@ -149,13 +149,16 @@ export function VideoPlayer(props) {
         bigPlayButton: true,
         controlBar: {
           theaterMode: props.hasTheaterMode,
-          pictureInPicture: false,
+          pictureInPicture: true,
           next: props.hasNextLink ? true : false,
           previous: props.hasPreviousLink ? true : false,
         },
         subtitles: subtitles,
         cornerLayers: props.cornerLayers,
         videoPreviewThumb: props.previewSprite,
+        vast: props.vastUrl ? {
+          vastUrl: props.vastUrl
+        } : undefined,
       },
       {
         volume: playerStates.playerVolume,
@@ -244,6 +247,7 @@ VideoPlayer.propTypes = {
   hasPreviousLink: PropTypes.bool.isRequired,
   poster: PropTypes.string,
   previewSprite: PropTypes.object,
+  vastUrl: PropTypes.string,
   onClickPreviousCallback: PropTypes.func,
   onClickNextCallback: PropTypes.func,
   onPlayerInitCallback: PropTypes.func,

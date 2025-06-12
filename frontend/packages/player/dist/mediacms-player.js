@@ -2339,7 +2339,7 @@
 	      next: !1,
 	      previous: !1,
 	      volume: !0,
-	      pictureInPicture: !0,
+	      pictureInPicture: !1,
 	      fullscreen: !0,
 	      theaterMode: !0,
 	      time: !0
@@ -2355,6 +2355,21 @@
 	      on: false,
 	      default: null,
 	      languages: []
+	    },
+	    vast: {
+	      vastUrl: null,
+	      options: {
+	        withCredentials: false,
+	        timeout: 6000,
+	        target: "_blank",
+	        allowMultipleAds: true,
+	        allowAdPods: true,
+	        cancelAdPods: false,
+	        clickthroughMethod: "player",
+	        nonlinearRecall: false,
+	        closeNonlinearButton: true,
+	        closeNonlinearTheme: "light"
+	      }
 	    }
 	  }
 	};
@@ -2397,6 +2412,23 @@
 	    }
 	  }
 	  opt.previewSprite = 'object' === typeof opt.previewSprite ? opt.previewSprite : {};
+	  if (opt.vast && opt.vast instanceof Object) {
+	    opt.vast.vastUrl = isString(opt.vast.vastUrl) && '' !== opt.vast.vastUrl.trim() ? opt.vast.vastUrl : defaults.options.vast.vastUrl;
+	    if (opt.vast.options && opt.vast.options instanceof Object) {
+	      opt.vast.options.withCredentials = ifBooleanElse(opt.vast.options.withCredentials, defaults.options.vast.options.withCredentials);
+	      opt.vast.options.timeout = typeof opt.vast.options.timeout === 'number' ? opt.vast.options.timeout : defaults.options.vast.options.timeout;
+	      opt.vast.options.target = isString(opt.vast.options.target) ? opt.vast.options.target : defaults.options.vast.options.target;
+	      opt.vast.options.allowMultipleAds = ifBooleanElse(opt.vast.options.allowMultipleAds, defaults.options.vast.options.allowMultipleAds);
+	      opt.vast.options.allowAdPods = ifBooleanElse(opt.vast.options.allowAdPods, defaults.options.vast.options.allowAdPods);
+	      opt.vast.options.cancelAdPods = ifBooleanElse(opt.vast.options.cancelAdPods, defaults.options.vast.options.cancelAdPods);
+	      opt.vast.options.clickthroughMethod = isString(opt.vast.options.clickthroughMethod) ? opt.vast.options.clickthroughMethod : defaults.options.vast.options.clickthroughMethod;
+	      opt.vast.options.nonlinearRecall = ifBooleanElse(opt.vast.options.nonlinearRecall, defaults.options.vast.options.nonlinearRecall);
+	      opt.vast.options.closeNonlinearButton = ifBooleanElse(opt.vast.options.closeNonlinearButton, defaults.options.vast.options.closeNonlinearButton);
+	      opt.vast.options.closeNonlinearTheme = isString(opt.vast.options.closeNonlinearTheme) ? opt.vast.options.closeNonlinearTheme : defaults.options.vast.options.closeNonlinearTheme;
+	    }
+	  } else {
+	    opt.vast = defaults.options.vast;
+	  }
 	  let obj;
 	  let sources_el = domPlayer.querySelectorAll('source');
 	  i = 0;
@@ -2554,6 +2586,34 @@
 	    }
 	  });
 	  this.player = videojs(domPlayer, passOptions);
+	  console.log("Initializing VAST");
+	  if (pluginOptions.vast && pluginOptions.vast.vastUrl) {
+	    if (!this.player.nuevo) {
+	      console.log("Nuevo plugin not found");
+	    }
+	    if (!this.player.vast) {
+	      console.log("Vast plugin not found");
+	    }
+	    if (this.player.nuevo && this.player.vast) {
+	      console.log("Vast initialized with URL " + pluginOptions.vast.vastUrl);
+	      try {
+	        this.player.nuevo({});
+	        setTimeout(() => {
+	          this.player.vast({
+	            tagURL: pluginOptions.vast.vastUrl,
+	            options: pluginOptions.vast.options
+	          });
+	          this.player.on("vastEvent", function (e, data) {
+	            console.log("vast event:");
+	            console.log(data.eventName);
+	            console.log(data.adType);
+	          });
+	        }, 100);
+	      } catch (e) {
+	        console.error("Error initializing VAST plugin:", e);
+	      }
+	    }
+	  }
 	  this.player.mediaCmsVjsPlugin(domPlayer, pluginOptions, pluginState, pluginVideoResolutions, pluginVideoPlaybackSpeeds, pluginStateUpdateCallback, onNextButtonClick, onPrevButtonClick);
 	  this.isEnded = this.player.mediaCmsVjsPlugin().isEnded;
 	  this.isFullscreen = this.player.mediaCmsVjsPlugin().isFullscreen;

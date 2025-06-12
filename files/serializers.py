@@ -78,6 +78,7 @@ class MediaSerializer(serializers.ModelSerializer):
             "featured",
             "user_featured",
             "size",
+            "vast_url",
             # "category",
         )
 
@@ -165,6 +166,7 @@ class SingleMediaSerializer(serializers.ModelSerializer):
             "add_subtitle_url",
             "allow_download",
             "slideshow_items",
+            "vast_url",
         )
 
 
@@ -195,6 +197,7 @@ class MediaSearchSerializer(serializers.ModelSerializer):
             "media_type",
             "preview_url",
             "categories_info",
+            "vast_url",
         )
 
 

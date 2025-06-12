@@ -286,6 +286,13 @@ class Media(models.Model):
 
     user_featured = models.BooleanField(default=False, help_text="Featured by the user")
 
+    vast_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="VAST URL for video ads"
+    )
+
     video_height = models.IntegerField(default=1)
 
     views = models.IntegerField(db_index=True, default=1)

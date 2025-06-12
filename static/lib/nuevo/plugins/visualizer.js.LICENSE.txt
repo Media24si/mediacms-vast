@@ -1,0 +1,5 @@
+/**
+ * @license
+ * Copyright (c) 2024 The Nuevodebel Team. All rights reserved.
+ * Visualizer Plugin for video.js Version 1.0
+ */

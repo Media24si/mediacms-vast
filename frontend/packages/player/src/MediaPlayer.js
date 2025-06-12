@@ -38,7 +38,7 @@ const defaults = {
 			next: !1,
 			previous: !1,
 			volume: !0,
-			pictureInPicture: !0, // @link: https://docs.videojs.com/control-bar_picture-in-picture-toggle.js.html
+			pictureInPicture: !1, // @link: https://docs.videojs.com/control-bar_picture-in-picture-toggle.js.html
 			fullscreen: !0,
 			theaterMode: !0,
 			time: !0,
@@ -54,6 +54,21 @@ const defaults = {
 			on: false,
 			default: null,
 			languages: [],
+		},
+		vast: {
+			vastUrl: null,
+			options: {
+				withCredentials: false, // (Boolean, default: false) - A boolean to enable the withCredentials options for the XHR URLHandler.
+				timeout: 6000, // (Number, default: 6000) - A custom timeout for the requests in milliseconds.
+				target: "_blank", // (String, default: "_blank") - Ad link target. Set it "_self" to open ad link in the same window.
+				allowMultipleAds: true, // (Boolean, default: true) - A boolean value that identifies whether multiple ads are allowed in the requested VAST response.
+				allowAdPods: true, // (Boolean, default: true) - A boolean value that identifies whether multiple adPods are allowed to play.
+				cancelAdPods: false, // (Boolean, default: false) - A boolean value that identifies whether possible adPods should be cancelled when precedind adPod was skipped.
+				clickthroughMethod: "player", // (String, default: player) - Set link to display the ad's link in the bottom left corner instead of clickable full-size window.
+				nonlinearRecall: false, // (Boolean, default: false) - Set true to enable the Recall button for nonlinear static asset.
+				closeNonlinearButton: true, // (Boolen, default: true) - Allows to show a close button for static nonlinear ad.
+				closeNonlinearTheme: "light", // (String, default: light) - Set dark to change the nonlinear close button theme.
+			}
 		},
 	},
 };
@@ -121,6 +136,26 @@ function filterPlayerOptions(domPlayer, opt) {
 	}
 
 	opt.previewSprite = 'object' === typeof opt.previewSprite ? opt.previewSprite : {};
+
+	// Handle VAST options
+	if (opt.vast && opt.vast instanceof Object) {
+		opt.vast.vastUrl = isString(opt.vast.vastUrl) && '' !== opt.vast.vastUrl.trim() ? opt.vast.vastUrl : defaults.options.vast.vastUrl;
+
+		if (opt.vast.options && opt.vast.options instanceof Object) {
+			opt.vast.options.withCredentials = ifBooleanElse(opt.vast.options.withCredentials, defaults.options.vast.options.withCredentials);
+			opt.vast.options.timeout = typeof opt.vast.options.timeout === 'number' ? opt.vast.options.timeout : defaults.options.vast.options.timeout;
+			opt.vast.options.target = isString(opt.vast.options.target) ? opt.vast.options.target : defaults.options.vast.options.target;
+			opt.vast.options.allowMultipleAds = ifBooleanElse(opt.vast.options.allowMultipleAds, defaults.options.vast.options.allowMultipleAds);
+			opt.vast.options.allowAdPods = ifBooleanElse(opt.vast.options.allowAdPods, defaults.options.vast.options.allowAdPods);
+			opt.vast.options.cancelAdPods = ifBooleanElse(opt.vast.options.cancelAdPods, defaults.options.vast.options.cancelAdPods);
+			opt.vast.options.clickthroughMethod = isString(opt.vast.options.clickthroughMethod) ? opt.vast.options.clickthroughMethod : defaults.options.vast.options.clickthroughMethod;
+			opt.vast.options.nonlinearRecall = ifBooleanElse(opt.vast.options.nonlinearRecall, defaults.options.vast.options.nonlinearRecall);
+			opt.vast.options.closeNonlinearButton = ifBooleanElse(opt.vast.options.closeNonlinearButton, defaults.options.vast.options.closeNonlinearButton);
+			opt.vast.options.closeNonlinearTheme = isString(opt.vast.options.closeNonlinearTheme) ? opt.vast.options.closeNonlinearTheme : defaults.options.vast.options.closeNonlinearTheme;
+		}
+	} else {
+		opt.vast = defaults.options.vast;
+	}
 
 	// Include HTML sources.
 
@@ -423,6 +458,43 @@ export function MediaPlayer(
 	});
 
 	this.player = videojs(domPlayer, passOptions);
+
+	console.log( "Initializing VAST" );
+	// Initialize VAST plugin if vastUrl is provided and the vast plugin is available
+	if (pluginOptions.vast && pluginOptions.vast.vastUrl) {
+		if (!this.player.nuevo) {
+			console.log( "Nuevo plugin not found" );
+		}
+		if (!this.player.vast) {
+			console.log( "Vast plugin not found" );
+		}
+
+		if (this.player.nuevo && this.player.vast) {
+			console.log( "Vast initialized with URL " + pluginOptions.vast.vastUrl );
+			// Initialize Nuevo plugin first with empty options
+			try {
+				this.player.nuevo({});
+				// Wait for Nuevo to initialize before initializing VAST
+				setTimeout(() => {
+					// Then initialize VAST plugin with the proper options
+					this.player.vast({
+						tagURL: pluginOptions.vast.vastUrl,
+						options: pluginOptions.vast.options
+					});
+
+					// Add event listeners for VAST events
+					this.player.on("vastEvent", function(e, data) {
+						console.log( "vast event:" );
+						console.log( data.eventName );
+						console.log( data.adType );
+					});
+				}, 100);
+			} catch (e) {
+				console.error("Error initializing VAST plugin:", e);
+			}
+		}
+	}
+
 
 	/*
 	 * Call plugin.

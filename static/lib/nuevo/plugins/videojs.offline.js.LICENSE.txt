@@ -1,0 +1,6 @@
+/**
+ * @license
+ * Copyright (c) 2023 The Nuevodevel Team. All rights reserved.
+ * Offline plugin for video.js v 8.*
+ * Version 3.0.0
+ */

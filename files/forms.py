@@ -21,6 +21,7 @@ class MediaForm(forms.ModelForm):
             "add_date",
             "uploaded_poster",
             "description",
+            "vast_url",
             "state",
             "enable_comments",
             "featured",
@@ -38,6 +39,7 @@ class MediaForm(forms.ModelForm):
         super(MediaForm, self).__init__(*args, **kwargs)
         if self.instance.media_type != "video":
             self.fields.pop("thumbnail_time")
+            self.fields.pop("vast_url")  # Remove VAST URL field for non-video media
         if not is_mediacms_editor(user):
             self.fields.pop("featured")
             self.fields.pop("reported_times")
@@ -63,12 +65,34 @@ class MediaForm(forms.ModelForm):
 
         self.fields["new_tags"].initial = ", ".join([tag.title for tag in self.instance.tags.all()])
 
+        # Add help text for VAST URL field
+        if "vast_url" in self.fields:
+            self.fields["vast_url"].help_text = "Enter a valid VAST URL for video ads (e.g., https://example.com/vast.xml)"
+            self.fields["vast_url"].label = "VAST Ad URL"
+
     def clean_uploaded_poster(self):
         image = self.cleaned_data.get("uploaded_poster", False)
         if image:
             if image.size > 5 * 1024 * 1024:
                 raise forms.ValidationError("Image file too large ( > 5mb )")
             return image
+
+    def clean_vast_url(self):
+        vast_url = self.cleaned_data.get("vast_url", "")
+        if vast_url:
+            # Basic URL validation
+            import re
+            url_pattern = re.compile(
+                r'^https?://'  # http:// or https://
+                r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+                r'localhost|'  # localhost...
+                r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ipv4
+                r'(?::\d+)?'  # optional port
+                r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+            if not url_pattern.match(vast_url):
+                raise forms.ValidationError("Please enter a valid URL (e.g., https://example.com/vast.xml)")
+        return vast_url
 
     def save(self, *args, **kwargs):
         data = self.cleaned_data

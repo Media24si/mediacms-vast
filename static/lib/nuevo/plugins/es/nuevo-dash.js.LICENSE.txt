@@ -1,0 +1,5 @@
+/**
+ * @license
+ * Copyright (c) 2023 The Nuevodevel Team. All rights reserved.
+ * Dash.js Tech for Video.js v8
+ */

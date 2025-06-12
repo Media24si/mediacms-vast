@@ -20,11 +20,17 @@ const formatPage = (page) => {
     ? templates.renderPageContent({ page: { id: pageContentId, component: page.component } })
     : undefined;
   const headLinks = [
+    // { rel: 'preload', href: './static/lib/nuevo/skins/nuevo/videojs.min.css', as: 'style' },
+    // { rel: 'stylesheet', href: './static/lib/nuevo/skins/nuevo/videojs.min.css' },
     { rel: 'preload', href: './static/lib/video-js/7.20.2/video.min.js', as: 'script' },
+    { rel: 'preload', href: './static/lib/nuevo/nuevo.min.js', as: 'script' },
+    { rel: 'preload', href: './static/lib/nuevo/plugins/vastpro.js', as: 'script' },
     ...(page.headLinks ? page.headLinks : []),
   ];
   const bodyScripts = [
     { src: './static/lib/video-js/7.20.2/video.min.js' },
+    { src: './static/lib/nuevo/nuevo.min.js' },
+    { src: './static/lib/nuevo/plugins/vastpro.js' },
     ...(page.bodyScripts ? page.bodyScripts : []),
   ];
 
