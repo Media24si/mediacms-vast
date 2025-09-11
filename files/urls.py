@@ -17,6 +17,7 @@ urlpatterns = [
     re_path(r"^categories$", views.categories, name="categories"),
     re_path(r"^contact$", views.contact, name="contact"),
     re_path(r"^edit", views.edit_media, name="edit_media"),
+    re_path(r"^embed-empty", views.embed_empty_media, name="get_embed_empty"),
     re_path(r"^embed", views.embed_media, name="get_embed"),
     re_path(r"^featured$", views.featured_media),
     re_path(r"^fu/", include(("uploader.urls", "uploader"), namespace="uploader")),

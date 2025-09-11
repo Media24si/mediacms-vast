@@ -1,0 +1,48 @@
+{% extends "root.html" %}
+{% load static %}
+
+{% block headtitle %}MediaCMS{% endblock headtitle %}
+
+{% block headermeta %}
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="MediaCMS">
+<meta property="og:type" content="video">
+{% endblock headermeta %}
+
+{% block topimports %}
+<link href="{% static "css/embed-empty.css" %}" rel="preload" as="style">
+<link href="{% static "css/embed-empty.css" %}" rel="stylesheet">
+<style>
+  /* Inline critical styles for embed-empty */
+  body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+  }
+  #page-embed-empty {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+</style>
+{%endblock topimports %}
+
+{% block content %}
+<div id="page-embed-empty" 
+     data-media="{{ media }}"
+     data-autoplay="{{ autoplay }}"
+     data-muted="{{ muted }}"
+     data-loop="{{ loop }}"
+     data-poster="{{ poster }}"
+     data-start="{{ start }}"
+     data-ratio="{{ ratio }}"
+     data-preset="empty">
+</div>
+{% endblock content %}
+
+{% block bottomimports %}
+<script src="{% static "js/embed-empty.js" %}"></script>
+{% endblock bottomimports %}

@@ -133,6 +133,74 @@ If you like the project, here's a few things you can do
 - Add functionality, work on a PR, fix an issue!
 
 
+## Embed Player Variants
+
+MediaCMS provides multiple embed options for different use cases:
+
+### Standard Embed (`/embed`)
+Full-featured player with controls, sharing options, and recommendations.
+
+### Empty Embed (`/embed-empty`) - Ad-Friendly
+Lightweight player with minimal UI designed for ad placements:
+
+- **Chrome-less design**: No visible controls except hover-only mute button
+- **Autoplay support**: Attempts muted autoplay by default
+- **PostMessage API**: Communicates with parent frame via PostMessage events
+- **Security headers**: Enhanced CSP and security configuration
+- **Responsive**: Adapts to container size
+
+#### Usage Example
+
+```html
+<iframe
+  src="https://your-domain.com/embed-empty?m=<MEDIA_ID>&autoplay=1&muted=1"
+  allow="autoplay; fullscreen; clipboard-write"
+  loading="lazy"
+  referrerpolicy="no-referrer-when-downgrade"
+  sandbox="allow-scripts allow-same-origin allow-popups"
+  frameborder="0"
+  scrolling="no"
+  width="640" 
+  height="360">
+</iframe>
+```
+
+#### Query Parameters
+
+- `m`: Media ID (required)
+- `autoplay`: Enable autoplay (default: 1)
+- `muted`: Start muted (default: 1)  
+- `loop`: Enable video looping (default: 0)
+- `poster`: Show poster image (default: 1)
+- `start`: Start time in seconds (default: 0)
+- `ratio`: Aspect ratio (e.g., "16:9", optional)
+
+#### PostMessage Events
+
+The embed-empty player sends these events to the parent window:
+
+```javascript
+// Listen for player events
+window.addEventListener('message', function(event) {
+  if (event.data.source === 'mediacms-embed-empty') {
+    switch (event.data.type) {
+      case 'ready': // Player initialized
+      case 'play': // Playback started  
+      case 'pause': // Playback paused
+      case 'ended': // Playback finished
+      case 'mutechange': // Mute state changed (includes event.data.muted)
+      case 'error': // Playback error (includes event.data.error)
+    }
+  }
+});
+
+// Send commands to player
+iframe.contentWindow.postMessage({ type: 'play' }, '*');
+iframe.contentWindow.postMessage({ type: 'pause' }, '*');
+iframe.contentWindow.postMessage({ type: 'mute' }, '*');
+iframe.contentWindow.postMessage({ type: 'unmute' }, '*');
+```
+
 ## Contact
 
 info@mediacms.io

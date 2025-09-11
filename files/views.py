@@ -292,6 +292,75 @@ def embed_media(request):
     return render(request, "cms/embed.html", context)
 
 
+def embed_empty_media(request):
+    """Embed empty media view - lightweight player with minimal UI for ads"""
+
+    friendly_token = request.GET.get("m", "").strip()
+    if not friendly_token:
+        return HttpResponseRedirect("/")
+
+    media = Media.objects.values("title").filter(friendly_token=friendly_token).first()
+
+    if not media:
+        return HttpResponseRedirect("/")
+    
+    # Validate and sanitize query parameters
+    autoplay = "1" if request.GET.get("autoplay", "1") in ["1", "true"] else "0"
+    muted = "1" if request.GET.get("muted", "1") in ["1", "true"] else "0"
+    loop = "1" if request.GET.get("loop", "0") in ["1", "true"] else "0"
+    poster = "1" if request.GET.get("poster", "1") in ["1", "true"] else "0"
+    
+    # Validate start time parameter
+    try:
+        start = max(0, int(request.GET.get("start", "0")))
+    except (ValueError, TypeError):
+        start = 0
+    
+    # Validate ratio parameter
+    ratio = request.GET.get("ratio", "").strip()
+    if ratio and not ratio.replace(":", "").replace(".", "").isdigit():
+        ratio = ""
+    
+    context = {
+        "media": friendly_token,
+        "autoplay": autoplay,
+        "muted": muted,
+        "loop": loop,
+        "poster": poster,
+        "start": str(start),
+        "ratio": ratio,
+    }
+    
+    response = render(request, "cms/embed-empty.html", context)
+    
+    # Security headers
+    response["X-Robots-Tag"] = "noindex, nofollow"
+    response["X-Content-Type-Options"] = "nosniff"
+    response["X-Frame-Options"] = "SAMEORIGIN"  # Allow embedding from same origin
+    response["Referrer-Policy"] = "no-referrer-when-downgrade"
+    
+    # CSP for embed-empty - more restrictive than regular embed
+    csp_policy = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",  # Needed for inline player code
+        "style-src 'self' 'unsafe-inline'",   # Needed for Material Icons and inline styles
+        "img-src 'self' data: blob:",         # For video posters and thumbnails
+        "media-src 'self' blob:",             # For video/audio sources
+        "font-src 'self' data:",              # For Material Icons font
+        "connect-src 'self'",                 # For API calls
+        "frame-ancestors 'self'",             # Allow iframe embedding from same origin
+        "base-uri 'self'",
+        "object-src 'none'",
+        "upgrade-insecure-requests"
+    ]
+    response["Content-Security-Policy"] = "; ".join(csp_policy)
+    
+    # Cache control for embed content
+    response["Cache-Control"] = "public, max-age=300"  # 5 minutes cache
+    
+    return response
+
+
 def featured_media(request):
     """List featured media view"""
 
