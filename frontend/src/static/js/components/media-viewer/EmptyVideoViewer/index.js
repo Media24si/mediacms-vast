@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, CSSProperties } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { SiteConsumer } from '../../../utils/contexts/';
 import { MediaPageStore, VideoViewerStore } from '../../../utils/stores/';
 import { formatInnerLink, addClassname, removeClassname } from '../../../utils/helpers/';
@@ -12,43 +12,17 @@ import {
 // Simplified video player for empty embed
 // import { createEmptyPlayer } from '../../video-player/EmptyVideoPlayer';
 
-interface EmptyVideoViewerProps {
-  data: any;
-  siteUrl: string;
-  containerStyles?: CSSProperties;
-  preset: string;
-}
-
-// Type definitions for video info structure
-interface VideoInfo {
-  [key: string]: {
-    format: string[];
-    url: string[];
-  };
-  Auto?: {
-    format: string[];
-    url: string[];
-  };
-}
-
-interface SupportedFormats {
-  order: string[];
-  support: {
-    [key: string]: boolean;
-  };
-}
-
-const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, containerStyles, preset }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+const EmptyVideoViewer = ({ data, siteUrl, containerStyles, preset }) => {
+  const videoRef = useRef(null);
+  const containerRef = useRef(null);
   const [displayPlayer, setDisplayPlayer] = useState(false);
-  const [playerInstance, setPlayerInstance] = useState<any>(null);
+  const [playerInstance, setPlayerInstance] = useState(null);
   const [showMuteControl, setShowMuteControl] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [tapTimer, setTapTimer] = useState<NodeJS.Timeout | null>(null);
+  const [tapTimer, setTapTimer] = useState(null);
 
   // Process video sources
-  const videoSources: Array<{src: string; type?: string}> = [];
+  const videoSources = [];
   let videoPoster = '';
 
   // Set poster image
@@ -59,9 +33,9 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
   }
 
   // Process video sources with proper type guards
-  const videoInfo: VideoInfo = videoAvailableCodecsAndResolutions(data.encodings_info, data.hls_info) || {};
+  const videoInfo = videoAvailableCodecsAndResolutions(data.encodings_info, data.hls_info) || {};
   if (Object.keys(videoInfo).length > 0) {
-    let quality: any = VideoViewerStore.get('video-quality');
+    let quality = VideoViewerStore.get('video-quality');
     if (quality === null || (quality === 'Auto' && !videoInfo.Auto)) {
       quality = 720;
     }
@@ -73,7 +47,7 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
       videoSources.push({ src: videoInfo.Auto.url[0] });
     }
 
-    const supportedFormats: SupportedFormats = orderedSupportedVideoFormats() || { order: [], support: {} };
+    const supportedFormats = orderedSupportedVideoFormats() || { order: [], support: {} };
 
     // Add progressive sources - check if resolution exists in videoInfo
     const resolutionData = videoInfo[defaultResolution];
@@ -90,7 +64,7 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
     if (data.encodings_info && data.encodings_info[defaultResolution]) {
       const encodingData = data.encodings_info[defaultResolution];
       for (const format in encodingData) {
-        if (encodingData.hasOwnProperty(format) && supportedFormats.support[format as keyof typeof supportedFormats.support]) {
+        if (encodingData.hasOwnProperty(format) && supportedFormats.support[format]) {
           const formatData = encodingData[format];
           if (formatData && formatData.url) {
             videoSources.push({
@@ -104,8 +78,8 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
   }
 
   // Helper function to get MIME type for video format
-  function getVideoMimeType(format: string): string | undefined {
-    const mimeTypes: { [key: string]: string } = {
+  function getVideoMimeType(format) {
+    const mimeTypes = {
       'mp4': 'video/mp4',
       'webm': 'video/webm',
       'ogg': 'video/ogg',
@@ -127,7 +101,7 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
   };
 
   // Handle tap events for mobile
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = (e) => {
     e.stopPropagation();
     setShowMuteControl(true);
 
@@ -146,7 +120,7 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
   };
 
   // Handle mute toggle
-  const handleMuteToggle = (e: React.MouseEvent) => {
+  const handleMuteToggle = (e) => {
     e.stopPropagation();
     if (videoRef.current) {
       const newMutedState = !videoRef.current.muted;
@@ -240,7 +214,7 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
           window.parent.postMessage({
             type: 'error',
             source: 'mediacms-embed-empty',
-            error: video.error?.message || 'Video playback error'
+            error: (video.error && video.error.message) || 'Video playback error'
           }, '*');
         }
       });
