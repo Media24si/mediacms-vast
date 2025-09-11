@@ -10,13 +10,32 @@ import {
 } from '../VideoViewer/functions';
 
 // Simplified video player for empty embed
-import { createEmptyPlayer } from '../../video-player/EmptyVideoPlayer';
+// import { createEmptyPlayer } from '../../video-player/EmptyVideoPlayer';
 
 interface EmptyVideoViewerProps {
   data: any;
   siteUrl: string;
   containerStyles?: CSSProperties;
   preset: string;
+}
+
+// Type definitions for video info structure
+interface VideoInfo {
+  [key: string]: {
+    format: string[];
+    url: string[];
+  };
+  Auto?: {
+    format: string[];
+    url: string[];
+  };
+}
+
+interface SupportedFormats {
+  order: string[];
+  support: {
+    [key: string]: boolean;
+  };
 }
 
 const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, containerStyles, preset }) => {
@@ -39,43 +58,63 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
     videoPoster = formatInnerLink(data.thumbnail_url, siteUrl);
   }
 
-  // Process video sources
-  const videoInfo = videoAvailableCodecsAndResolutions(data.encodings_info, data.hls_info);
-  if (Object.keys(videoInfo).length) {
-    let quality = VideoViewerStore.get('video-quality');
-    if (quality === null || (quality === 'Auto' && videoInfo.Auto === undefined)) {
+  // Process video sources with proper type guards
+  const videoInfo: VideoInfo = videoAvailableCodecsAndResolutions(data.encodings_info, data.hls_info) || {};
+  if (Object.keys(videoInfo).length > 0) {
+    let quality: any = VideoViewerStore.get('video-quality');
+    if (quality === null || (quality === 'Auto' && !videoInfo.Auto)) {
       quality = 720;
     }
 
     const defaultResolution = extractDefaultVideoResolution(quality, videoInfo);
-    
+
     // Add HLS source if available
-    if (quality === 'Auto' && videoInfo.Auto !== undefined) {
+    if (quality === 'Auto' && videoInfo.Auto) {
       videoSources.push({ src: videoInfo.Auto.url[0] });
     }
 
-    const supportedFormats = orderedSupportedVideoFormats();
-    
-    // Add progressive sources
-    for (let i = 0; i < videoInfo[defaultResolution].format.length; i++) {
-      if (videoInfo[defaultResolution].format[i] === 'hls') {
-        videoSources.push({ src: videoInfo[defaultResolution].url[i] });
-        break;
-      }
-    }
+    const supportedFormats: SupportedFormats = orderedSupportedVideoFormats() || { order: [], support: {} };
 
-    // Add other formats
-    for (const format in data.encodings_info[defaultResolution]) {
-      if (data.encodings_info[defaultResolution].hasOwnProperty(format) && supportedFormats.support[format]) {
-        const url = data.encodings_info[defaultResolution][format].url;
-        if (url) {
-          videoSources.push({
-            src: formatInnerLink(url, siteUrl),
-            type: supportedFormats.type[format]
-          });
+    // Add progressive sources - check if resolution exists in videoInfo
+    const resolutionData = videoInfo[defaultResolution];
+    if (resolutionData && resolutionData.format && resolutionData.url) {
+      for (let i = 0; i < resolutionData.format.length; i++) {
+        if (resolutionData.format[i] === 'hls') {
+          videoSources.push({ src: resolutionData.url[i] });
+          break;
         }
       }
     }
+
+    // Add other formats - with proper type checking
+    if (data.encodings_info && data.encodings_info[defaultResolution]) {
+      const encodingData = data.encodings_info[defaultResolution];
+      for (const format in encodingData) {
+        if (encodingData.hasOwnProperty(format) && supportedFormats.support[format as keyof typeof supportedFormats.support]) {
+          const formatData = encodingData[format];
+          if (formatData && formatData.url) {
+            videoSources.push({
+              src: formatInnerLink(formatData.url, siteUrl),
+              type: getVideoMimeType(format)
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Helper function to get MIME type for video format
+  function getVideoMimeType(format: string): string | undefined {
+    const mimeTypes: { [key: string]: string } = {
+      'mp4': 'video/mp4',
+      'webm': 'video/webm',
+      'ogg': 'video/ogg',
+      'h264': 'video/mp4',
+      'h265': 'video/mp4',
+      'vp9': 'video/webm',
+      'vp8': 'video/webm',
+    };
+    return mimeTypes[format];
   }
 
   // Handle hover events for desktop
@@ -91,18 +130,18 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
   const handleTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation();
     setShowMuteControl(true);
-    
+
     // Clear existing timer
     if (tapTimer) {
       clearTimeout(tapTimer);
     }
-    
+
     // Hide after 3 seconds
     const timer = setTimeout(() => {
       setShowMuteControl(false);
       setTapTimer(null);
     }, 3000);
-    
+
     setTapTimer(timer);
   };
 
@@ -135,7 +174,7 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
 
     if (videoRef.current) {
       const video = videoRef.current;
-      
+
       // Set video attributes for empty preset
       video.muted = true;
       video.autoplay = true;
@@ -259,7 +298,7 @@ const EmptyVideoViewer: React.FC<EmptyVideoViewerProps> = ({ data, siteUrl, cont
               className="video-js vjs-mediacms native-dimensions"
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
-            
+
             {/* Hover-only mute control */}
             <button
               className={`vjs-mute-control ${showMuteControl ? 'visible' : ''}`}
